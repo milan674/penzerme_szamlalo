@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 def Resize(img):            # kép átméretezése
     (h,w) = img.shape[:2]   #eredeti kép magasságának és szélességének lekérdezése
     print ("Az eredeti kep merete: ", (h,w)) 
-    new_width=1440  # megadom, hogy mekkora legyen az új szélesseg :  Ebből kiszámolja  a magasságot, így az arányok nem változnak
+    new_width=1024 # megadom, hogy mekkora legyen az új szélesseg :  Ebből kiszámolja  a magasságot, így az arányok nem változnak
     ratio = new_width /w  # az új és régi szélesseg aránya ---> ezzel kell beszorozni a régi magasságot, es megkapom az új magasságot
     dim = (new_width,int(h * ratio) ) # új magasság, új méret kiszámítása     dim -> tuple = (uj_szelesseg,uj_magassag)
     resized = cv2.resize(img, dim, cv2.INTER_AREA)  # átméretezés
@@ -15,7 +15,7 @@ def Resize(img):            # kép átméretezése
     return resized
 
 def FindCircles(gray_img,radius): #körök megkeresése : HoughCircles segítségével
-    circles = cv2.HoughCircles(gray_img,cv2.HOUGH_GRADIENT,1,120,param1=40,param2=25, minRadius=40, maxRadius=170)
+    circles = cv2.HoughCircles(gray_img,cv2.HOUGH_GRADIENT,1,180,param1=40,param2=10, minRadius=30, maxRadius=230)
     circles = np.uint16(np.around(circles))
     for i in circles[0,:]:
         radius.append(i[2]) # a körök sugarait tároló tömbhöz hozzáfűzi az aktuális kör sugarának az értékét
@@ -29,16 +29,15 @@ def averageIntensity(img, circles):
     av_values = []
     for coordinates in circles[0,:]:
         r=coordinates[2]
-        """
-        r=80 #próbálkozás kisebb értékkel, a pontosabb eredmény miatt
         coin= img[coordinates[1] - r:coordinates[1] + r, coordinates[0] - r:coordinates[0] + r] 
-        plt.imshow(coin)  #érmék kivágott területének megjelenítése
-        plt.colorbar()  
-        plt.show() 
-        """
-        column = np.mean(img[coordinates[1]-r:coordinates[1]+r, coordinates[0]-r:coordinates[0]+r]) 
-        av_values.append(np.around(column))
-    print (av_values)
+        #plt.imshow(coin)  #érmék kivágott területének megjelenítése
+        #plt.colorbar()  
+        #plt.show() 
+        coin_hls = cv2.cvtColor(coin, cv2.COLOR_RGB2HLS) # másik színrendszer használata
+        avg_row = np.average(coin_hls, axis=0)
+        avg_hls = np.average(avg_row, axis=0)
+        av_values.append(np.around(avg_hls[0]))  # hue = avg_hls[0]
+    print (av_values) 
     return av_values
 
 
@@ -46,35 +45,37 @@ def CoinAnalysis(radius,colour_values,Found_coins,output):  # melyik körben mil
     sum=0 #pénzérmék összegét tárolja
     count=0
     for i,j in zip (radius,colour_values):
-        if  i < 115 :
-                    print("5 Ft-os erme")
-                    sum+=5
-                    Found_coins.append(5)
-        elif (i >= 120 and i<=135) and ( j>115 ): 
-                    print ("10 ft-os erme")
-                    sum+=10
-                    Found_coins.append(10)
-        elif(i >= 125 and i <= 135) and (j>=90 and j<=107):
+        if j>=90:
+            if i>80 and i<115:
+                 print ("10 ft-os erme")
+                 sum+=10
+                 Found_coins.append(10)
+            else:
+                print ("50 ft-os erme")
+                sum+=50
+                Found_coins.append(50)
+        elif j<78:
+            if i<104:
+                 print("5 Ft-os erme")
+                 sum+=5
+                 Found_coins.append(5)
+            elif i>120 and j>=60:
+                 print ("200 ft-os erme")
+                 sum+=200
+                 Found_coins.append(200)
+            elif (i>=104 and j<60):
                     print ("20 ft-os erme")
                     sum+=20
                     Found_coins.append(20)
-        elif (i >= 135 and i <=147) and (j>=100):
-                    print ("50 ft-os erme")
-                    sum+=50
-                    Found_coins.append(50)
-        elif (i >= 110 and i <= 132) and j<90:
+        else:
                     print ("100 ft-os erme")
                     sum+=100
-                    Found_coins.append(100)
-        elif (i >= 140) and j<100:
-                    print ("200 ft-os erme")
-                    sum+=200
-                    Found_coins.append(200)
+                    Found_coins.append(100)      
 
     for k in circles[0,:]:  #pénzérmék típusainak kiirása a képre
          cv2.putText(output, str(Found_coins[count]),(k[0]-60,k[1]),cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,0), 5)
          count += 1
-    cv2.putText(output,"Az ermek osszege: "+ str(sum)+ " Ft",(10,1000),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),2)
+    cv2.putText(output,"Az ermek osszege: "+ str(sum)+ " Ft",(10,1300),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),2)
     return sum
 
 def DrawCircles(image,circles):   # megtalált körök megrajzolása és kiírja a képre, hogy melyik érmét hányadiknak tárolta el
@@ -83,19 +84,19 @@ def DrawCircles(image,circles):   # megtalált körök megrajzolása és kiírja
         cv2.circle(image, (i[0], i[1]), (i[2]), (0, 255, 0), 5) # rajzol egy kört az érmék köré
         #cv2.circle(image, (i[0], i[1]), 2, (255, 255, 0), 5) # megrajozlja a kör középpontját
         # kiírja a képre, hogy melyik érmét hányadik helyen találta
-        #cv2.putText(image, str(szamlalo), ((i[0]) - 70, (i[1]) + 30), cv2.FONT_HERSHEY_SIMPLEX,1.5, (255, 0, 0),5) 
+        cv2.putText(image, str(szamlalo), ((i[0]) - 70, (i[1]) + 30), cv2.FONT_HERSHEY_SIMPLEX,1.5, (255, 0, 0),5) 
         szamlalo+=1
     return image
 
 #-------------MAIN----------
 #1.rész: kép átméretezés, szürkeárnyalatossá alakítás,Gauss szűrő alkalmazása, körök megkeresése a képen
-img = cv2.imread('58.jpg') # kép beolvasása
+img = cv2.imread('test/545.jpg') # kép beolvasása
 img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 resized=Resize(img)  #kép átméretezése
 output=resized.copy()  # Másolat az átméretezett színes képről, később erre írom ki a találatokat
 
 gray_img = cv2.cvtColor(resized.astype(np.uint8), cv2.COLOR_BGR2GRAY)   #szürkeárnyalatossá alakítás
-blurred_img=cv2.GaussianBlur(gray_img,(31,31),0)# Gauss szűrő alkalmazása, a részleteket elrejti, azokra a körök keresésénel nincs szükség
+blurred_img=cv2.GaussianBlur(gray_img,(27,27),0)# Gauss szűrő alkalmazása, a részleteket elrejti, azokra a körök keresésénel nincs szükség
 cv2.imwrite("blurred.jpg",blurred_img)# ellenőrzés, hogy a  Gauss szűrő sikeres?
 cv2.imwrite("szurke.jpg",gray_img) # ellenőrzés, hogy a szürkeárnyalatos átalakítás sikeres?
 

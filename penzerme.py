@@ -3,7 +3,6 @@ import cv2
 from matplotlib import pyplot as plt
 
 #1.rész: kép átméretezés, szürkeárnyalatossá alakítás,Gauss szűrő alkalmazása, körök megkeresése a képen
-
 def Resize(img):            # kép átméretezése
     (h,w) = img.shape[:2]   #eredeti kép magasságának és szélességének lekérdezése
     print ("Az eredeti kep merete: ", (h,w)) 
@@ -73,7 +72,7 @@ def CoinAnalysis(radius,colour_values,Found_coins,output):  # melyik körben mil
                     Found_coins.append(100)      
 
     for k in circles[0,:]:  #pénzérmék típusainak kiirása a képre
-         cv2.putText(output, str(Found_coins[count]),(k[0]-60,k[1]),cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,0), 5)
+         #cv2.putText(output, str(Found_coins[count]),(k[0]-60,k[1]),cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,0), 5)
          count += 1
     cv2.putText(output,"Az ermek osszege: "+ str(sum)+ " Ft",(10,1300),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),2)
     return sum
@@ -90,15 +89,27 @@ def DrawCircles(image,circles):   # megtalált körök megrajzolása és kiírja
 
 #-------------MAIN----------
 #1.rész: kép átméretezés, szürkeárnyalatossá alakítás,Gauss szűrő alkalmazása, körök megkeresése a képen
-img = cv2.imread('test/545.jpg') # kép beolvasása
+#img = cv2.imread('test/545.jpg') # kép beolvasása
+
+from tkinter import filedialog
+import tkinter as tk
+
+#img = cv2.imread('test/545.jpg')
+root = tk.Tk()
+root.withdraw()
+path = filedialog.askopenfilename()
+print(path)
+
+img=cv2.imread(path) 
+
 img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 resized=Resize(img)  #kép átméretezése
 output=resized.copy()  # Másolat az átméretezett színes képről, később erre írom ki a találatokat
 
 gray_img = cv2.cvtColor(resized.astype(np.uint8), cv2.COLOR_BGR2GRAY)   #szürkeárnyalatossá alakítás
 blurred_img=cv2.GaussianBlur(gray_img,(27,27),0)# Gauss szűrő alkalmazása, a részleteket elrejti, azokra a körök keresésénel nincs szükség
-cv2.imwrite("blurred.jpg",blurred_img)# ellenőrzés, hogy a  Gauss szűrő sikeres?
-cv2.imwrite("szurke.jpg",gray_img) # ellenőrzés, hogy a szürkeárnyalatos átalakítás sikeres?
+#cv2.imwrite("blurred.jpg",blurred_img)# ellenőrzés, hogy a  Gauss szűrő sikeres?
+#cv2.imwrite("szurke.jpg",gray_img) # ellenőrzés, hogy a szürkeárnyalatos átalakítás sikeres?
 
 radius=[]  # ebben tárolom el a körök sugarát
 circles=FindCircles(blurred_img,radius)  # körök megkeresése, kör középpontjának x,y koordinátáinak eltárolása, kör sugarának eltárolása

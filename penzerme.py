@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+from tkinter import filedialog
+import tkinter as tk
 
 #1.rész: kép átméretezés, szürkeárnyalatossá alakítás,Gauss szűrő alkalmazása, körök megkeresése a képen
 def Resize(img):            # kép átméretezése
@@ -29,9 +31,6 @@ def averageIntensity(img, circles):
     for coordinates in circles[0,:]:
         r=coordinates[2]
         coin= img[coordinates[1] - r:coordinates[1] + r, coordinates[0] - r:coordinates[0] + r] 
-        #plt.imshow(coin)  #érmék kivágott területének megjelenítése
-        #plt.colorbar()  
-        #plt.show() 
         coin_hls = cv2.cvtColor(coin, cv2.COLOR_RGB2HLS) # másik színrendszer használata
         avg_row = np.average(coin_hls, axis=0)
         avg_hls = np.average(avg_row, axis=0)
@@ -44,7 +43,7 @@ def CoinAnalysis(radius,colour_values,Found_coins,output):  # melyik körben mil
     sum=0 #pénzérmék összegét tárolja
     count=0
     for i,j in zip (radius,colour_values):
-        if j>=90:
+        if j>=90 and j<=130:
             if i>80 and i<115:
                  print ("10 ft-os erme")
                  sum+=10
@@ -63,18 +62,21 @@ def CoinAnalysis(radius,colour_values,Found_coins,output):  # melyik körben mil
                  sum+=200
                  Found_coins.append(200)
             elif (i>=104 and j<60):
-                    print ("20 ft-os erme")
-                    sum+=20
-                    Found_coins.append(20)
+                 print ("20 ft-os erme")
+                 sum+=20
+                 Found_coins.append(20)
+        elif j<90 and j>=78:
+                 print ("100 ft-os erme")
+                 sum+=100
+                 Found_coins.append(100)      
         else:
-                    print ("100 ft-os erme")
-                    sum+=100
-                    Found_coins.append(100)      
+                 print("egyeb targy")
+                 Found_coins.append(0)
 
     for k in circles[0,:]:  #pénzérmék típusainak kiirása a képre
-         #cv2.putText(output, str(Found_coins[count]),(k[0]-60,k[1]),cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,0), 5)
+         cv2.putText(output, str(Found_coins[count]),(k[0]-60,k[1]),cv2.FONT_HERSHEY_SIMPLEX, 3, (255,0,0), 5)
          count += 1
-    cv2.putText(output,"Az ermek osszege: "+ str(sum)+ " Ft",(10,1300),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),2)
+    cv2.putText(output,"Az ermek osszege: "+ str(sum)+ " Ft",(10,100),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),2)
     return sum
 
 def DrawCircles(image,circles):   # megtalált körök megrajzolása és kiírja a képre, hogy melyik érmét hányadiknak tárolta el
@@ -91,10 +93,6 @@ def DrawCircles(image,circles):   # megtalált körök megrajzolása és kiírja
 #1.rész: kép átméretezés, szürkeárnyalatossá alakítás,Gauss szűrő alkalmazása, körök megkeresése a képen
 #img = cv2.imread('test/545.jpg') # kép beolvasása
 
-from tkinter import filedialog
-import tkinter as tk
-
-#img = cv2.imread('test/545.jpg')
 root = tk.Tk()
 root.withdraw()
 path = filedialog.askopenfilename()
@@ -108,8 +106,6 @@ output=resized.copy()  # Másolat az átméretezett színes képről, később e
 
 gray_img = cv2.cvtColor(resized.astype(np.uint8), cv2.COLOR_BGR2GRAY)   #szürkeárnyalatossá alakítás
 blurred_img=cv2.GaussianBlur(gray_img,(27,27),0)# Gauss szűrő alkalmazása, a részleteket elrejti, azokra a körök keresésénel nincs szükség
-#cv2.imwrite("blurred.jpg",blurred_img)# ellenőrzés, hogy a  Gauss szűrő sikeres?
-#cv2.imwrite("szurke.jpg",gray_img) # ellenőrzés, hogy a szürkeárnyalatos átalakítás sikeres?
 
 radius=[]  # ebben tárolom el a körök sugarát
 circles=FindCircles(blurred_img,radius)  # körök megkeresése, kör középpontjának x,y koordinátáinak eltárolása, kör sugarának eltárolása

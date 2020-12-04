@@ -22,7 +22,7 @@ def FindCircles(gray_img,radius): #körök megkeresése : HoughCircles segítsé
         radius.append(i[2]) # a körök sugarait tároló tömbhöz hozzáfűzi az aktuális kör sugarának az értékét
     print("     X    Y     R" )
     print(circles) # megtalált körök középpontjának x és y koordinátái, és sugara
-    print(" Megtalaltam", circles.shape[1],  "db penzermet!")
+    print(" Megtalaltam", circles.shape[1],  "kor alakzatot!")
     return circles
 
 # 2. rész: megtalált körök elemzése: milyen intenzitású, mekkora a sugara?--> milyen érme? 
